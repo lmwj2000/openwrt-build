@@ -1,1 +1,43 @@
 
+name: Build OpenWrt
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Set up build environment
+      run: |
+        sudo apt update && sudo apt install -y build-essential clang flex g++ gawk gcc-multilib \
+          gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev \
+          qemu-utils ccache
+
+    - name: Clone LEDE source
+      run: |
+        git clone https://github.com/coolsnowwolf/lede.git openwrt
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Load custom config
+      run: |
+        cd openwrt
+        wget https://yourdomain.com/your.config -O .config
+
+    - name: Build
+      run: |
+        cd openwrt
+        make defconfig
+        make -j$(nproc)
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: openwrt-x86
+        path: openwrt/bin/targets/
